@@ -1,0 +1,40 @@
+name: Post a Meme
+
+on:
+  workflow_dispatch:
+  # schedule:
+  #   - cron: "0 */2 * * *"
+
+jobs:
+  scheduled:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v3
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Configure git
+        run: |-
+          git config user.name "SUCHO Memebot"
+          git config user.email "actions@users.noreply.github.com"
+
+      - name: Post a random (unposted) meme
+        env:
+          MASTODON_TOKEN: ${{ secrets.MASTODON_TOKEN }}
+        run: ./memebot.py -v
+
+      - name: Commit posted.log
+        run: |-
+          git add -A
+          timestamp=$(date -u)
+          git commit -m "Update posted.log at ${timestamp}" || exit 0
+          git push
