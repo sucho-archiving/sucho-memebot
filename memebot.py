@@ -25,6 +25,8 @@ TOKEN = os.environ.get("MASTODON_TOKEN")
 if not TOKEN:
     raise UnconfiguredEnvironment("MASTODON_TOKEN not set")
 
+STATUS_CHARACTER_LIMIT = 500
+
 POSTED_LOG = "posted.log"
 MASTODON_STATUSES_API_ENDPOINT = (
     MASTODON_HOST + "/api/v1/statuses?access_token=" + TOKEN
@@ -41,7 +43,7 @@ def post_status(post, media_id):
     }
 
     data = {
-        "status": f"{post['summary']}\n\n{post['link']}\n\n#SUCHO",
+        "status": build_status(post),
         "media_ids[]": [media_id],
     }
 
@@ -53,7 +55,8 @@ def post_status(post, media_id):
         raise SystemExit(exp)
 
     if response.status_code != 200:
-        logging.warning(response.text)
+        # Note: 404 status when testing could be an "Idempotency-Key" collision...
+        logging.warning(f"{response.status_code}: {response.text}")
         raise SystemExit(response.status_code)
 
     return response.json()
@@ -90,6 +93,24 @@ def assemble_post(entry):
         "media_fn": media.href.split("/")[-1],
         "media_mime": media.type,
     }
+
+
+def build_status(post):
+    summary = post["summary"]
+    postscript = f"\n\n{post['link']}\n\n#SUCHO"
+
+    postscript_length = (
+        len("#SUCHO")  # hashtag
+        + 4  # newlines
+        + 23  # URLs count for 23 characters, regardless of length (https://docs.joinmastodon.org/user/posting/#links)
+    )
+
+    if len(post["summary"]) > STATUS_CHARACTER_LIMIT - postscript_length:
+        summary = (
+            post["summary"][: STATUS_CHARACTER_LIMIT - postscript_length - 1] + "…"
+        )
+
+    return summary + postscript
 
 
 def log_posted(meme_id, post_date, post_link):
