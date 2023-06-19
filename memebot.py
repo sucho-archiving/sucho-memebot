@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-""" SUCHO Meme Bot - RSS to Mastodon """
+""" SUCHO Memebot - RSS to Mastodon """
 
 import argparse
 import json
@@ -53,7 +53,7 @@ def post_status(post, media_id):
         raise SystemExit(exp)
 
     if response.status_code != 200:
-        logging.warn(response.text)
+        logging.warning(response.text)
         raise SystemExit(response.status_code)
 
     return response.json()
