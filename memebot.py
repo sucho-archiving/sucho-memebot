@@ -142,7 +142,11 @@ def get_meme_id(meme):
 
 def memebot_go_beepboop():
     info("Fetching memes and selecting an unposted meme...")
-    meme = choose_meme()
+    try:
+        meme = choose_meme()
+    except StopIteration:
+        info("No unposted memes found -- exiting!")
+        return
     debug(json.dumps(meme, indent=2) + "\n\n")
 
     post = assemble_post(meme)
